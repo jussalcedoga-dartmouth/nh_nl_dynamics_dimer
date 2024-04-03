@@ -10,7 +10,7 @@ from matplotlib import cm
 
 matplotlib.use('Agg')  # Use the 'Agg' backend for PNG output
 
-folder_name = '230318_JS_calibrated_params_new_devices2'
+folder_name = 'results'
 os.makedirs(folder_name, exist_ok=True)
 
 # Constants and Parameters
@@ -41,10 +41,6 @@ kappa_cavity1 = kappa_0_1 + drive_kappa + t_hop_2_1 + t_hop_1_1
 kappa_cavity2 = kappa_0_2 + readout_kappa + t_hop_2_2 + t_hop_1_2
 
 epsilon_dBm = -10
-
-## offsets at particular phases...
-# offsets = {0.0: 4.5, np.pi: 5.2 + 8}
-# vmaxs = {0.0: -16.54, np.pi: 5}
 
 def dbm_to_watts(dbm):
     """Convert dBm to Watts."""
