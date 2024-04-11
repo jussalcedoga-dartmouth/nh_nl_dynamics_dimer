@@ -10,35 +10,33 @@ from matplotlib import cm
 
 matplotlib.use('Agg')  # Use the 'Agg' backend for PNG output
 
-folder_name = 'results'
+folder_name = 'SS_results_no_od_phase'
 os.makedirs(folder_name, exist_ok=True)
 
-# Constants and Parameters
-omega1 = 6.03582e9
-omega2 = 6.03494e9
+omega1 = 6.02982e9
+omega2 = 6.029494e9
 
 h_bar = 1.054571817e-34
 
-t_hop_1_1 = 18e6#.71e6## sigmax cavity 1
+t_hop_1_1 = 15e6#.71e6## sigmax cavity 1
 
-t_hop_1_2 = 18e6#.89e6## port 1 cavity 2
+t_hop_1_2 = 15e6#.89e6## port 1 cavity 2
 
-t_hop_2_1 = 18e6#.77e6## sigmaz cavity 1
+t_hop_2_1 = 15e6#.77e6## sigmaz cavity 1
 
-t_hop_2_2 = 18e6#.94e6## sigmax cavity 2
+t_hop_2_2 = 15e6#.94e6## sigmax cavity 2
 
 # Drive 2 read 1
 readout_kappa = 3.06e6# port 1 cavity 1
 drive_kappa = 3.87e6# port sigmaz cavity 2
 
-kappa_0_1 = 7.04e6
-kappa_0_2 = 8.73e6
+kappa_0_1 = 7.04e6 - 0.2e6
+kappa_0_2 = 8.73e6 - 0.2e6
 
-# kappa_0_1 = omega1/(2*850)
-# kappa_0_2 = omega2/(2*850)
+print(kappa_0_1, kappa_0_2)
 
-kappa_cavity1 = kappa_0_1 + drive_kappa + t_hop_2_1 + t_hop_1_1
-kappa_cavity2 = kappa_0_2 + readout_kappa + t_hop_2_2 + t_hop_1_2
+kappa_cavity1 = kappa_0_1 + readout_kappa + t_hop_2_1 + t_hop_1_1
+kappa_cavity2 = kappa_0_2 + drive_kappa + t_hop_2_2 + t_hop_1_2
 
 epsilon_dBm = -10
 
@@ -49,10 +47,10 @@ def dbm_to_watts(dbm):
 def model_function(x, a, b, c):
     return a * (1 / (1 + (x / b))) + c
 
-gain_1 = 19.5
+gain_1 = 19.8
 a_1, b_1, c_1, flat_line_value_1, x0_1 = pwf.return_params(gain_1)
 
-gain_2 = 19.5
+gain_2 = 19.8
 a_2, b_2, c_2, flat_line_value_2, x0_2 = pwf.return_params(gain_2)
 
 def piece_wise_amp_function(x, a, b, c, flat_line_value, x0):
@@ -82,7 +80,7 @@ def func(alpha, omega_d, phase, attenuation, epsilon_dBm = -10):
     G2 = piece_wise_amp_function(N2_watts, a_2, b_2, c_2, flat_line_value_2, x0_2) * 10 ** (-(attenuation + 6.7 + 4.5)/20)
 
     d_alpha1 = -(((kappa_cavity1) - (G2)*np.sqrt(t_hop_1_1 * t_hop_2_1)) + 1j * (omega1 - omega_d)) * alpha1_c + 1j * G2 * np.sqrt(t_hop_1_1 * t_hop_2_1) * alpha2_c
-    d_alpha2 = -(((kappa_cavity1) - (G1)*np.sqrt(t_hop_1_2 * t_hop_2_2)) + 1j * (omega2 - omega_d)) * alpha2_c + 1j * G1 * np.sqrt(t_hop_1_2 * t_hop_2_2) * alpha1_c * np.exp(-1j * phase) + epsilon
+    d_alpha2 = -(((kappa_cavity2) - (G1)*np.sqrt(t_hop_1_2 * t_hop_2_2)) + 1j * (omega2 - omega_d)) * alpha2_c + 1j * G1 * np.sqrt(t_hop_1_2 * t_hop_2_2) * alpha1_c * np.exp(-1j * phase) + epsilon
 
     return [d_alpha1.real, d_alpha1.imag, d_alpha2.real, d_alpha2.imag]
 
@@ -91,7 +89,7 @@ def fixed_points(omega_d_val, phase_val, att, initial_guess, epsilon_dBm=-10):
     if phase_val == 0:
         tolerance = 1e-8
     else:
-        tolerance = 1e-4
+        tolerance = 1e-8
 
     sol = root(lambda x: func(x, omega_d_val, phase_val, att, epsilon_dBm=epsilon_dBm), initial_guess, tol=tolerance, method='broyden1')
     if sol.success:
@@ -147,7 +145,7 @@ def create_plots_for_phase(frequencies, attenuations, phase, epsilon_dBm=-10):
                 if alpha2_sol.imag > max_alpha_2_imag:
                     max_alpha_2_imag = alpha2_sol.imag
 
-                N2_watts = calculate_power(N1_total, readout_kappa, h_bar, omega2)
+                N2_watts = calculate_power(N1_total, readout_kappa, h_bar, omega1)
 
                 N2_dBm = power_to_dBm(N2_watts)
                 N2_dB = dBm_to_dB(N2_dBm)
@@ -234,7 +232,7 @@ def create_plots_for_phase(frequencies, attenuations, phase, epsilon_dBm=-10):
     plt.xlabel("Frequency [GHz]", fontsize=20)
     plt.ylabel("Symmetric Attenuation [dB]", fontsize=20)
 
-    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(5))
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(4))
 
     clb.ax.tick_params(labelsize=20) 
     
@@ -247,11 +245,11 @@ def create_plots_for_phase(frequencies, attenuations, phase, epsilon_dBm=-10):
 
 alpha = [2000, 0, 2000, 0]
 phases = [0, np.pi]
-attenuations = np.linspace(0, 15, 31)
+attenuations = np.linspace(0, 8.5, 31)
 
 epsilon_dBms = [-10]
-frequencies_to_simulate = {0: np.linspace(5.98e9, 6.09e9, 1000),
-                           np.pi: np.linspace(6.015e9, 6.055e9, 1000)}
+frequencies_to_simulate = {0: np.linspace(5.975e9, 6.085e9, 1000),
+                           np.pi: np.linspace(6.0153e9, 6.046e9, 1000)}
 
 for epsilon_dBm in epsilon_dBms:
   for phase in phases:
