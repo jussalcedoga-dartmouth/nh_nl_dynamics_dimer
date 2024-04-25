@@ -41,7 +41,7 @@ def plot_data(gains, phases, amplitude, frequency, title, save_path):
     ax1.axvline(4.52, ls='--', lw=2.0, color='crimson')
     
     # Frequency plot
-    freq_contour = ax2.contourf(gains, phases, frequency, levels=100, cmap='viridis')
+    freq_contour = ax2.contourf(gains, phases, frequency, levels=100, cmap='inferno')
     fig.colorbar(freq_contour, ax=ax2, label='Frequency [GHz]')
     ax2.set_xlabel('Gain [dB]')
     ax2.set_ylabel('Phase [rad]')
