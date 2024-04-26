@@ -106,6 +106,75 @@ def func(alpha, omega_d, phase, attenuation):
 
     return [d_alpha1.real, d_alpha1.imag, d_alpha2.real, d_alpha2.imag]
 
+def deriv_G12(N_12, mode_idx = 1):
+    '''To be filled out by Juan. This function takes in the variable N1 (if mode_idx = 1),
+       or N2 (if mode_idx = 2), and returns the derivative of the gain function G1 (if mode_idx = 1),
+       or G2 (if mode_idx = 2) with respect to the variable N1 or N2 repectively
+       -- so NO WATTS or anything, but taking in the actual (dimensionless) photon numbers...'''
+    pass
+
+def jacobian(alpha, omega_d, phase, attenuation, epsilon_dBm = None): # don't need drive for gradient...
+    '''This function (written by Michiel) takes in the same input as the "func" method,
+       but returns the Jacobian of the system of equations. It has two relations to other functions.
+       First, the input "alpha" is typically taken as the output of the "fixed_points" function,
+       since we want to evaluate the jacobian at an equilibrium point.
+       Second, the method "" will further diagonalize the output of "jacobian",
+       and decide on stability.'''
+    
+    # First part is same as for teh vector field defined in "func".
+    alpha1, alpha1_i, alpha2, alpha2_i = alpha
+    alpha1_c = alpha1 + 1j * alpha1_i
+    alpha2_c = alpha2 + 1j * alpha2_i
+
+    N1 = np.sqrt(alpha1_c.real**2 + alpha1_c.imag**2)**2
+    N2 = np.sqrt(alpha2_c.real**2 + alpha2_c.imag**2)**2
+
+    N1_watts = h_bar * omega1 * N1 * t_hop_1_1/4
+    N2_watts = h_bar * omega2 * N2 * t_hop_1_2/4
+
+    G1 = piece_wise_amp_function(N1_watts, a_1, b_1, c_1, flat_line_value_1, x0_1) * 10 ** (-(attenuation + insertion_loss)/20)
+    G2 = piece_wise_amp_function(N2_watts, a_2, b_2, c_2, flat_line_value_2, x0_2) * 10 ** (-(attenuation + insertion_loss)/20)
+
+    jacobian = np.zeros((4, 4))
+
+    # now fill out the jacobian with what we had found in the notebook "calculate_jacobian_analytically.ipynb"
+    jacobian[0,0] = -kappa_cavity1/2 + t_hop_1_1*t_hop_2_1*G2/2
+    jacobian[0,1] = omega1 - omega_d
+    jacobian[0,2] = alpha1*alpha2*t_hop_1_1*t_hop_2_1 * deriv_G12(N2, mode_idx = 2)\
+                    - 2*alpha2*alpha2_i*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1) * deriv_G12(N2, mode_idx = 2)
+    jacobian[0,3] = -G2*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1)\
+                    + alpha1*alpha2_i*deriv_G12(N2, mode_idx = 2)*t_hop_1_1*t_hop_2_1\
+                    - 2*alpha2_i**2*deriv_G12(N2, mode_idx = 2)*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1)
+    jacobian[1,0] = -omega1 + omega_d
+    jacobian[1,1] = G2*t_hop_1_1*t_hop_2_1/2 - kappa_cavity1/2
+    jacobian[1,2] = G2*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1)\
+                    + alpha1_i*alpha2*deriv_G12(N2, mode_idx = 2)*t_hop_1_1*t_hop_2_1\
+                    + 2*alpha2**2*deriv_G12(N2, mode_idx = 2)*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1)
+    jacobian[1,3] = alpha1_i*alpha2_i*deriv_G12(N2, mode_idx = 2)*t_hop_1_1*t_hop_2_1\
+                    + 2*alpha2*alpha2_i*deriv_G12(N2, mode_idx = 2)*np.sqrt(t_hop_1_1)*np.sqrt(t_hop_2_1)
+    jacobian[2,0] = G1*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*np.sin(phase)\
+                    + alpha1*alpha2*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.cos(phase)\
+                    + alpha1*alpha2_i*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.sin(phase)\
+                    - 2*alpha1*deriv_G12(N1, mode_idx = 1)*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*(-alpha1*np.sin(phase) + alpha1_i*np.cos(phase))
+    jacobian[2,1] = -G1*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*np.cos(phase)\
+                    + alpha1_i*alpha2*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.cos(phase)\
+                    + alpha1_i*alpha2_i*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.sin(phase)\
+                    - 2*alpha1_i*deriv_G12(N1, mode_idx = 1)*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*(-alpha1*np.sin(phase) + alpha1_i*np.cos(phase))
+    jacobian[2,2] = G1*t_hop_1_2*t_hop_2_2*np.cos(phase)/2 - kappa_cavity2/2
+    jacobian[2,3] = G1*t_hop_1_2*t_hop_2_2*np.sin(phase)/2 + omega2 - omega_d
+    jacobian[3,0] = G1*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*np.cos(phase)\
+                    - alpha1*alpha2*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.sin(phase)\
+                    + alpha1*alpha2_i*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.cos(phase)\
+                    + 2*alpha1*deriv_G12(N1, mode_idx = 1)*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*(alpha1*np.cos(phase) + alpha1_i*np.sin(phase))
+    jacobian[3,1] = G1*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*np.sin(phase)\
+                    - alpha1_i*alpha2*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.sin(phase)\
+                    + alpha1_i*alpha2_i*deriv_G12(N1, mode_idx = 1)*t_hop_1_2*t_hop_2_2*np.cos(phase)\
+                    + 2*alpha1_i*deriv_G12(N1, mode_idx = 1)*np.sqrt(t_hop_1_2)*np.sqrt(t_hop_2_2)*(alpha1*np.cos(phase) + alpha1_i*np.sin(phase))
+    jacobian[3,2] = -G1*t_hop_1_2*t_hop_2_2*np.sin(phase)/2 - omega2 + omega_d
+    jacobian[3,3] = G1*t_hop_1_2*t_hop_2_2*np.cos(phase)/2 - kappa_cavity2/2
+
+    return jacobian
+
 def calculate_power(N, kappa, hbar, omega):
     return N * kappa * hbar * omega/4
 
@@ -114,6 +183,8 @@ def power_to_dBm(power_watts):
     return 10 * np.log10(power_watts * 1e3)
 
 def check_stability(jacobian):
+    '''This looks good! We should be all set with the new
+       analytical way of determining the jacobian (Michiel).'''
     eigenvalues = np.linalg.eigvals(jacobian)
     return np.all(np.real(eigenvalues) < 0)
 
