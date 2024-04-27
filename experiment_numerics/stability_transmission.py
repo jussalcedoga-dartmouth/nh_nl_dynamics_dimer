@@ -118,7 +118,7 @@ def jacobian(alpha, omega_d, phase, attenuation, epsilon_dBm = None): # don't ne
        but returns the Jacobian of the system of equations. It has two relations to other functions.
        First, the input "alpha" is typically taken as the output of the "fixed_points" function,
        since we want to evaluate the jacobian at an equilibrium point.
-       Second, the method "" will further diagonalize the output of "jacobian",
+       Second, the method "check_stability" will further diagonalize the output of "jacobian",
        and decide on stability.'''
     
     # First part is same as for teh vector field defined in "func".
@@ -173,6 +173,8 @@ def jacobian(alpha, omega_d, phase, attenuation, epsilon_dBm = None): # don't ne
     jacobian[3,2] = -G1*t_hop_1_2*t_hop_2_2*np.sin(phase)/2 - omega2 + omega_d
     jacobian[3,3] = G1*t_hop_1_2*t_hop_2_2*np.cos(phase)/2 - kappa_cavity2/2
 
+    # The formulas used here have been checked by Michiel in the sense that when evaluating in the vacuum, we get the vorrect linear model.
+
     return jacobian
 
 def calculate_power(N, kappa, hbar, omega):
@@ -184,7 +186,9 @@ def power_to_dBm(power_watts):
 
 def check_stability(jacobian):
     '''This looks good! We should be all set with the new
-       analytical way of determining the jacobian (Michiel).'''
+       analytical way of determining the jacobian (Michiel).
+       Let me know if it is not clear how to "white out" the numerical parameter points
+       where the linear system is unstable, by setting the appropriate values to "np.nan". (Michiel)'''
     eigenvalues = np.linalg.eigvals(jacobian)
     return np.all(np.real(eigenvalues) < 0)
 
