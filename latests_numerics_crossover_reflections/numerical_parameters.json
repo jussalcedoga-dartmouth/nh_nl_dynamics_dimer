@@ -1,0 +1,17 @@
+{
+  "omega1": 6.03,
+  "omega2": 6.03,
+  "h_bar": 1.054571817e-34,
+  "kappa_c": 17.9,
+  "readout_kappa": 5.2,
+  "drive_kappa": 4.2,
+  "kappa_0_1": 6.03,
+  "kappa_0_2": 7.73,
+  "hermitian_num_points": 100,
+  "nh_num_points": 100,
+  "num_attenuations":30,
+  "grid_phase_diagram": 100,
+  "epsilon_dBm": -10,
+  "gain_threshold": 4.52,
+  "G_0": 21.75
+}
