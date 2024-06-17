@@ -179,13 +179,12 @@ def func_real_no_drive(alpha, phase, attenuation):
     slope_da, intercept_da = find_closest_gain_parameters(df_da, query_gain_value)
     nu_da = model_function_reflection_ps_da(N1_watts, slope_da, intercept_da)
 
-    #################################################################################################
     if nu_G12 >= 1.0:
-        kappa_diag_1 = kappa_0_1 + readout_kappa + kappa_c - (nu_r1 + nu_da)*kappa_c - (nu_G12 - 1)*kappa_c
-        kappa_diag_2 = kappa_0_2 + drive_kappa + kappa_c - (nu_r2 + nu_ps)*kappa_c - (nu_G21 - 1)*kappa_c
+        kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c - (nu_G21 - 1)*kappa_c
+        kappa_diag_2 = kappa_0_2 + readout_kappa + kappa_c - (nu_r2 + nu_da)*kappa_c - (nu_G12 - 1)*kappa_c
     else:
-        kappa_diag_1 = kappa_0_1 + readout_kappa + kappa_c - (nu_r1 + nu_da)*kappa_c
-        kappa_diag_2 = kappa_0_2 + drive_kappa + kappa_c - (nu_r2 + nu_ps)*kappa_c
+        kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c
+        kappa_diag_2 = kappa_0_2 + readout_kappa + kappa_c - (nu_r2 + nu_da)*kappa_c
 
     print('\n', kappa_diag_1/1e6, kappa_diag_2/1e6, ', gain: ', query_gain_value, ', nu_da: ', nu_da, ', nu_r1: ', nu_r1, ', nu_r2: ', nu_r2, ', nu_ps: ', nu_ps)
 
