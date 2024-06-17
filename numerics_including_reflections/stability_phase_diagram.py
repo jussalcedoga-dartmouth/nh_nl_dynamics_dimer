@@ -193,10 +193,10 @@ def func_real_no_drive(alpha, phase, attenuation):
     kappa_ts2_dict[(attenuation, phase)].append(kappa_diag_2)
 
     d_alpha1 = -(kappa_diag_1 + 1j*(omega1))*alpha1_c \
-                - 1j * nu_G21*kappa_c*alpha2_c
+                - 1j * nu_G21*np.exp(1j*(phase))*kappa_c*alpha2_c
 
     d_alpha2 = -(kappa_diag_2 + 1j*(omega2))*alpha2_c \
-                - 1j * nu_G12*np.exp(1j*(phase))*kappa_c*alpha1_c
+                - 1j * nu_G12*kappa_c*alpha1_c
     
     Jeff_12_dict[(attenuation, phase)].append(nu_G12*kappa_c)
     Jeff_21_dict[(attenuation, phase)].append(nu_G21*kappa_c)
