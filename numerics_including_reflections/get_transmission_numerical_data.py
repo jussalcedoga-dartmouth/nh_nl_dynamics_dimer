@@ -200,19 +200,19 @@ def func(alpha, omega_d, phase, attenuation, epsilon_dBm = -10):
     nu_da = model_function_reflection_ps_da(N1_watts, slope_da, intercept_da)
 
     if nu_G12 >= 1.0:
-        kappa_diag_1 = kappa_0_1 + readout_kappa + kappa_c - (nu_r1 + nu_da)*kappa_c - (nu_G12 - 1)*kappa_c
-        kappa_diag_2 = kappa_0_2 + drive_kappa + kappa_c - (nu_r2 + nu_ps)*kappa_c - (nu_G21 - 1)*kappa_c
+        kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c - (nu_G21 - 1)*kappa_c
+        kappa_diag_2 = kappa_0_2 + readout_kappa + kappa_c - (nu_r2 + nu_da)*kappa_c - (nu_G12 - 1)*kappa_c
     else:
-        kappa_diag_1 = kappa_0_1 + readout_kappa + kappa_c - (nu_r1 + nu_da)*kappa_c
-        kappa_diag_2 = kappa_0_2 + drive_kappa + kappa_c - (nu_r2 + nu_ps)*kappa_c
+        kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c
+        kappa_diag_2 = kappa_0_2 + readout_kappa + kappa_c - (nu_r2 + nu_da)*kappa_c
 
     print('\n', kappa_diag_1/1e6, kappa_diag_2/1e6, ', gain: ', query_gain_value, ', nu_da: ', nu_da, ', nu_r1: ', nu_r1, ', nu_r2: ', nu_r2, ', nu_ps: ', nu_ps)
 
     d_alpha1 = -(kappa_diag_1 + 1j*(omega1 - omega_d))*alpha1_c \
-                - 1j * nu_G21*np.exp(1j*(phase))*kappa_c*alpha2_c
+                - 1j * nu_G21*np.exp(1j*(phase))*kappa_c*alpha2_c + epsilon
 
     d_alpha2 = -(kappa_diag_2 + 1j*(omega2 - omega_d))*alpha2_c \
-                - 1j * nu_G12*kappa_c*alpha1_c + epsilon
+                - 1j * nu_G12*kappa_c*alpha1_c
 
     return [d_alpha1.real, d_alpha1.imag, d_alpha2.real, d_alpha2.imag]
 
@@ -235,11 +235,11 @@ def create_plots_for_phase(frequencies, attenuations, phase, epsilon_dBm=-10):
         for i, omega_d_val in enumerate(frequencies):
             try:
                 # Use last successful guess as the initial condition
-                alpha1_sol, _ = fixed_points(omega_d_val, phase, attenuation, initial_guess, epsilon_dBm=epsilon_dBm)
+                _, alpha2_sol = fixed_points(omega_d_val, phase, attenuation, initial_guess, epsilon_dBm=epsilon_dBm)
 
                 ## Compute photon numbers and convert it to a dB scale to compare with experiment
-                N1_total = np.sqrt(alpha1_sol.real**2 + alpha1_sol.imag**2)**2
-                N2_watts = calculate_power(N1_total, readout_kappa, h_bar, omega1)  # Readout cavity 1
+                N2_total = np.sqrt(alpha2_sol.real**2 + alpha2_sol.imag**2)**2
+                N2_watts = calculate_power(N2_total, readout_kappa, h_bar, omega2)  # Readout cavity 1
                 N2_dBm = power_to_dBm(N2_watts)
                 N2_dB = dBm_to_dB(N2_dBm)
                 alpha2_solutions[i, j] = N2_dB
