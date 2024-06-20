@@ -108,10 +108,10 @@ a_2, b_2, c_2, flat_line_value_2, x0_2 =  9.2448, 0.008638, 0.0, 8.2716171, 0.00
 a_r, b_r, c_r, flat_line_r, x0_r = 0.3554, 0.00634, 0.73626, 0.4854, 0.0007981
 
 def piece_wise_amp_function(x, a, b, c, flat_line_value, x0):
-    return np.where(x <= x0, flat_line_value, model_function(x, a, b, c))
+    return np.where(x <= x0 + 0.0002, flat_line_value, model_function(x, a, b, c))
 
 def piece_wise_amp_reflection(x_r, a_r, b_r, c_r, flat_line_r, x0_r):
-    return np.where(x_r <= x0_r, flat_line_r, model_function_reflection(x_r, a_r, b_r, c_r))
+    return np.where(x_r <= x0_r + 0.002, flat_line_r, model_function_reflection(x_r, a_r, b_r, c_r))
 
 def dBm_to_dB(S21_dBm, input_power_dBm=-10):
     relative_power_dBm = S21_dBm

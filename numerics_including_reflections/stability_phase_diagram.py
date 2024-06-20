@@ -97,10 +97,10 @@ a_2, b_2, c_2, flat_line_value_2, x0_2 =  9.2448, 0.008638, 0.0, 8.2716171, 0.00
 a_r, b_r, c_r, flat_line_r, x0_r = 0.3554, 0.00634, 0.73626, 0.4854, 0.0007981
 
 def piece_wise_amp_function(x, a, b, c, flat_line_value, x0):
-    return np.where(x <= x0, flat_line_value, model_function(x, a, b, c))
+    return np.where(x <= x0 + 0.0002, flat_line_value, model_function(x, a, b, c))
 
 def piece_wise_amp_reflection(x_r, a_r, b_r, c_r, flat_line_r, x0_r):
-    return np.where(x_r <= x0_r, flat_line_r, model_function_reflection(x_r, a_r, b_r, c_r))
+    return np.where(x_r <= x0_r + 0.002, flat_line_r, model_function_reflection(x_r, a_r, b_r, c_r))
 
 def model_function_reflection_ps_da(x, slope, intercept):
     return slope * x + intercept
@@ -146,6 +146,8 @@ kappa_ts2_dict = defaultdict(list)
 
 Jeff_12_dict = defaultdict(list)
 Jeff_21_dict = defaultdict(list)
+N1_dict = defaultdict(list)
+N2_dict = defaultdict(list)
 
 def func_real_no_drive(alpha, phase, attenuation):
 
@@ -186,6 +188,7 @@ def func_real_no_drive(alpha, phase, attenuation):
         kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c
         kappa_diag_2 = kappa_0_2 + readout_kappa + kappa_c - (nu_r2 + nu_da)*kappa_c
 
+    print('Photon Numbers:', N1_watts, N2_watts)
     print('\n', kappa_diag_1/1e6, kappa_diag_2/1e6, ', gain: ', query_gain_value, ', nu_da: ', nu_da, ', nu_r1: ', nu_r1, ', nu_r2: ', nu_r2, ', nu_ps: ', nu_ps)
 
     kappa_ts_dict[(attenuation, phase)].append(kappa_diag_1)
@@ -199,6 +202,10 @@ def func_real_no_drive(alpha, phase, attenuation):
     
     Jeff_12_dict[(attenuation, phase)].append(nu_G12*kappa_c)
     Jeff_21_dict[(attenuation, phase)].append(nu_G21*kappa_c)
+
+    Jeff_21_dict[(attenuation, phase)].append(nu_G21*kappa_c)
+    N1_dict[(attenuation, phase)].append(N1_watts)
+    N2_dict[(attenuation, phase)].append(N2_watts)
     #################################################################################################
 
     return [d_alpha1.real, d_alpha1.imag, d_alpha2.real, d_alpha2.imag]
@@ -467,7 +474,6 @@ plt.tight_layout()
 plt.savefig(f'{folder_plots}/J_vs_deltaG.png')
 plt.close()
 
-
 #### Single trace for J as a function of Delta G
 phase_index = 0  # you can change this index to select a different phase
 selected_phase = phases[phase_index]
@@ -488,4 +494,72 @@ plt.axvline(4.52, ls='--', color='k')
 ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 plt.tight_layout()
 plt.savefig(f'{folder_plots}/Jk_c_vs_deltaG.png')
+plt.close()
+
+net_gains = sorted(max(attenuations) - att for att in attenuations)
+
+# Prepare the data grids
+N1_grid = np.zeros((len(phases), len(net_gains)))
+N2_grid = np.zeros((len(phases), len(net_gains)))
+N_avg_grid = np.zeros((len(phases), len(net_gains)))
+
+for i, phase in enumerate(phases):
+    for j, attenuation in enumerate(attenuations):
+        net_gain_index = net_gains.index(max(attenuations) - attenuation)
+        N1_avg = np.mean(N1_dict[(attenuation, phase)])
+        N2_avg = np.mean(N2_dict[(attenuation, phase)])
+        N_avg = np.mean([N1_avg, N2_avg])
+
+        N1_grid[i, net_gain_index] = N1_avg
+        N2_grid[i, net_gain_index] = N2_avg
+        N_avg_grid[i, net_gain_index] = N_avg
+
+net_gains = calculate_net_gain(np.array(attenuation_values))
+
+# Plotting Average N1
+fig, ax = plt.subplots()
+c = ax.imshow(N1_grid, aspect='auto', origin='lower', 
+              extent=[net_gains[0], net_gains[-1], phases[0], phases[-1]],
+              interpolation='nearest', cmap='inferno')
+
+ax.set_xlabel(r'$\Delta G$ [dB]')
+ax.set_ylabel(r'$\phi$')
+set_yaxis_ticks(ax)
+cbar = fig.colorbar(c, ax=ax)
+cbar.set_label(r'$N_1$')
+ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+plt.tight_layout()
+plt.savefig(f'{folder_plots}/N1_colormap.png')
+plt.close()
+
+# Plotting Average N2
+fig, ax = plt.subplots()
+c = ax.imshow(N2_grid, aspect='auto', origin='lower', 
+              extent=[net_gains[0], net_gains[-1], phases[0], phases[-1]],
+              interpolation='nearest', cmap='inferno')
+
+ax.set_xlabel(r'$\Delta G$ [dB]')
+ax.set_ylabel(r'$\phi$')
+set_yaxis_ticks(ax)
+cbar = fig.colorbar(c, ax=ax)
+cbar.set_label(r'$N_2$')
+ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+plt.tight_layout()
+plt.savefig(f'{folder_plots}/N2_colormap.png')
+plt.close()
+
+# Plotting Average N2
+fig, ax = plt.subplots()
+c = ax.imshow(N_avg_grid, aspect='auto', origin='lower', 
+              extent=[net_gains[0], net_gains[-1], phases[0], phases[-1]],
+              interpolation='nearest', cmap='inferno')
+
+ax.set_xlabel(r'$\Delta G$ [dB]')
+ax.set_ylabel(r'$\phi$')
+set_yaxis_ticks(ax)
+cbar = fig.colorbar(c, ax=ax)
+cbar.set_label(r'$N_avg$')
+ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+plt.tight_layout()
+plt.savefig(f'{folder_plots}/N_avg_colormap.png')
 plt.close()
