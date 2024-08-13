@@ -171,10 +171,10 @@ def func(alpha, omega_d, phase, attenuation, epsilon_dBm = -10):
     alpha1, alpha1_i, alpha2, alpha2_i = alpha
     alpha1_c = alpha1 + 1j * alpha1_i
     alpha2_c = alpha2 + 1j * alpha2_i
-    
+
     epsilon_watts = 10 ** ((epsilon_dBm - 30) / 10)
     epsilon = np.sqrt((drive_kappa * epsilon_watts) / (h_bar * omega_d))
-    
+
     N1 = np.sqrt(alpha1_c.real**2 + alpha1_c.imag**2)**2
     N2 = np.sqrt(alpha2_c.real**2 + alpha2_c.imag**2)**2
 
@@ -192,12 +192,12 @@ def func(alpha, omega_d, phase, attenuation, epsilon_dBm = -10):
 
     ## Reflections off the phase shifter
     slope_ps, intercept_ps = find_closest_parameters(df, phase)
-    nu_ps = model_function_reflection_ps_da(N2_watts, slope_ps, intercept_ps)*eta_A
+    nu_ps = model_function_reflection_ps_da(N1_watts, slope_ps, intercept_ps)
 
     ## Reflections off the attenuator
     query_gain_value = max_symm_gain - attenuation
     slope_da, intercept_da = find_closest_gain_parameters(df_da, query_gain_value)
-    nu_da = model_function_reflection_ps_da(N1_watts, slope_da, intercept_da)
+    nu_da = model_function_reflection_ps_da(N2_watts, slope_da, intercept_da)
 
     if nu_G12 >= 1.0:
         kappa_diag_1 = kappa_0_1 + drive_kappa + kappa_c - (nu_r1 + nu_ps)*kappa_c - (nu_G21 - 1)*kappa_c
@@ -239,7 +239,7 @@ def create_plots_for_phase(frequencies, attenuations, phase, epsilon_dBm=-10):
 
                 ## Compute photon numbers and convert it to a dB scale to compare with experiment
                 N2_total = np.sqrt(alpha2_sol.real**2 + alpha2_sol.imag**2)**2
-                N2_watts = calculate_power(N2_total, readout_kappa, h_bar, omega2)  # Readout cavity 1
+                N2_watts = calculate_power(N2_total, readout_kappa, h_bar, omega2)  # Readout cavity 2
                 N2_dBm = power_to_dBm(N2_watts)
                 N2_dB = dBm_to_dB(N2_dBm)
                 alpha2_solutions[i, j] = N2_dB
