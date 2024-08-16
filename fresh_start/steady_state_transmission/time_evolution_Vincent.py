@@ -186,7 +186,7 @@ def run_simulation_for_gain(net_gain):
     plt.close()
 
 # List of gains
-gains = np.linspace(-4.6, 8.4, 31)[::-1]  # Example gain values from -3dB to +3dB
+gains = np.linspace(-4.6, 8.4, 31)[::-1]  ## Range of net gains that we performed the transmission experiments at.
 
 for gain in gains:
     print(f'Running simulation for net gain: {gain:2f}')
